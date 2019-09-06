@@ -5,9 +5,4 @@ package-lock.json
 #osx
 .DS_Store
 
-#docz
-.docz
-.doc/
 
-#dist
-dist

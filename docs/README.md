@@ -1,11 +1,15 @@
-# socket.io.client.biz
+---
+home: true
+actionText: More Information
+actionLink: /api/
+---
 
 [![NPM version][npm-image]][npm-url]
 ![][david-url]
 ![][dt-url]
 ![][license-url]
 
-DFocus wanted ssp solution - javascript-client.
+DFocus wanted ssp solution - javascript-client. It must be work with the specific Backend(TBD)
 
 `socket.io.client.biz` is made for domain specific business scenarios. It consists of following features:
 
@@ -17,31 +21,7 @@ DFocus wanted ssp solution - javascript-client.
 
 ## Install
 
-### yarn
-
-```bash
-yarn add socket.io.client.biz
-```
-
-### npm
-
-```bash
-npm install --save socket.io.client.biz
-```
-
-## Import
-
-### ES2015
-
-```javascript
-import { SocketIoClientBiz } from 'socket.io.client.biz'
-```
-
-### CommonJS
-
-```javascript
-const { SocketIoClientBiz } = require('socket.io.client.biz')
-```
+Currently, you can only use `socket.io.client.biz` from the [source](https://github.com/DFocusFE/socket.io.client.biz), just copy `dist` folder into your repo.
 
 ## Usage
 
@@ -59,6 +39,9 @@ const bizClient = new SocketIoClientBiz({
   }
 })
 
+// connect
+bizClient.connect()
+
 // watch every connection state change
 bizClient.onStateChange(state => {
   console.log('state changed to', state)
@@ -68,9 +51,6 @@ bizClient.onStateChange(state => {
 bizClient.subscribe('spaces', 'SPACE_ADDED', (message: EventMessage) => {
   console.log(message)
 })
-
-// connect
-bizClient.connect()
 ```
 
 ## LICENSE

@@ -9,15 +9,18 @@ import {
   StateChangeCallback,
   EventMessage,
   SUBSCRIBE_CODE,
-  EventCallback
+  EventCallback,
+  EventStruct
 } from './types'
+
+import { toUrl } from './helper'
 
 export class SocketIoClientBiz {
   private _opts: SocketOpts
   private _state: CLIENT_STATE
   private _stateChangeSubscriptions: Array<StateChangeCallback>
   private _socket: SocketIOClient.Socket
-  private _topicsSubscribed: Array<string> = []
+  private _events: Array<EventStruct> = []
 
   constructor(opts: SocketOpts) {
     this._opts = opts
@@ -26,7 +29,7 @@ export class SocketIoClientBiz {
     this.validate()
 
     this._stateChangeSubscriptions = []
-    this._topicsSubscribed = []
+    this._events = []
   }
 
   private validate() {
@@ -42,7 +45,49 @@ export class SocketIoClientBiz {
       throw new Error('You cannot call connect multiple times')
     }
 
-    return this.connectToWebsocket()
+    this.connectToWebsocket()
+  }
+
+  private connectToWebsocket() {
+    const { base, projectId, token } = this._opts
+    this._socket = io(toUrl(base, projectId), { multiplex: false })
+
+    this.changeState(CLIENT_STATE.CONNECTING)
+    console.debug('Trying to connect to ssp Server...')
+
+    const disconnectEvents = [
+      CONNECT_EVENT.CONNECT_ERROR,
+      CONNECT_EVENT.CONNECT_TIMEOUT,
+      CONNECT_EVENT.DISCONNECT,
+      CONNECT_EVENT.ERROR,
+      CONNECT_EVENT.RECONNECT_ERROR,
+      CONNECT_EVENT.RECONNECT_FAILED
+    ]
+
+    disconnectEvents.forEach(e => {
+      this._socket.on(e, () => {
+        this.changeState(CLIENT_STATE.DISCONNECTED)
+        this.endProcess()
+      })
+    })
+
+    this._socket.on(CONNECT_EVENT.RECONNECT, () => {
+      this.changeState(CLIENT_STATE.CONNECTED)
+    })
+
+    this._socket.on(CONNECT_EVENT.CONNECT, () => {
+      // handshake for authentication purpose
+      this._socket.emit(BIZ_EVENT.AUTH, { projectId, token }, (authCode: AUTH_CODE) => {
+        console.debug('Handshake status', authCode)
+        // failed to auth, disconnect and won't retry
+        if (AUTH_CODE.AUTH_FAILED === authCode) {
+          return this.disconnect()
+        }
+        this.changeState(CLIENT_STATE.CONNECTED)
+
+        this.startProcess()
+      })
+    })
   }
 
   public disconnect() {
@@ -50,7 +95,7 @@ export class SocketIoClientBiz {
       this.changeState(CLIENT_STATE.DISCONNECTED)
 
       this._stateChangeSubscriptions = []
-      this._topicsSubscribed = []
+      this._events = []
 
       const socket = this._socket
       this._socket = null
@@ -77,88 +122,42 @@ export class SocketIoClientBiz {
     })
   }
 
-  public subscribe(...topics: Array<string>) {
-    if (!topics || !topics.length) {
-      throw new Error('topics cannot be empty')
+  public subscribe(topic: string, event: string, callback: EventCallback) {
+    if (!topic || !event || !callback) {
+      throw new Error('topic or event or callback cannot be empty')
     }
 
-    if (this._state !== CLIENT_STATE.CONNECTED) {
-      return Promise.reject(
-        new Error('You cannot subscribe topics while connection has not been established')
-      )
-    }
-
-    return new Promise((resolve, reject) => {
-      this._socket.emit(BIZ_EVENT.SUBSCRIBE, topics, (subscribeCode: SUBSCRIBE_CODE) => {
-        console.debug('subscribe ack code:', subscribeCode)
-        if (SUBSCRIBE_CODE.SUB_SUCCESS !== subscribeCode) {
-          // reject is not allowed
-          return reject()
-        }
-        this._topicsSubscribed.push(...topics)
-        resolve()
-      })
+    this._events.push({
+      topic,
+      event,
+      callback
     })
   }
 
-  public on(topic: string, event: string, eventCallback: EventCallback) {
-    if (!topic || !event) {
-      throw new Error('topic and event cannot be empty')
-    }
+  private startProcess() {
+    const topics = this._events.map(e => e.topic)
 
-    if (this._topicsSubscribed.every(t => t !== topic)) {
-      console.warn(`You are trying to listen a topic: ${topic} without subscribe first`)
-      return
-    }
-
-    this._socket.on(event, (e: string) => {
-      const message: EventMessage = JSON.parse(e)
-      if (message.topic === topic) {
-        eventCallback(message)
+    this._socket.emit(BIZ_EVENT.SUBSCRIBE, topics, (subscribeCode: SUBSCRIBE_CODE) => {
+      console.debug('subscribe ack code:', subscribeCode)
+      if (SUBSCRIBE_CODE.SUB_SUCCESS !== subscribeCode) {
+        // do nothing if it is not allowed
+        return
       }
-    })
-  }
 
-  private connectToWebsocket() {
-    const { base } = this._opts
-    this._socket = io(base, { multiplex: false })
-    const { token, projectId } = this._opts
-
-    this.changeState(CLIENT_STATE.CONNECTING)
-    console.debug('Trying to connect to ssp Server...')
-
-    const disconnectEvents = [
-      CONNECT_EVENT.CONNECT_ERROR,
-      CONNECT_EVENT.CONNECT_TIMEOUT,
-      CONNECT_EVENT.DISCONNECT,
-      CONNECT_EVENT.ERROR,
-      CONNECT_EVENT.RECONNECT_ERROR,
-      CONNECT_EVENT.RECONNECT_FAILED
-    ]
-
-    disconnectEvents.forEach(e => {
-      this._socket.on(e, () => {
-        this.changeState(CLIENT_STATE.DISCONNECTED)
-      })
-    })
-
-    this._socket.on(CONNECT_EVENT.RECONNECT, () => {
-      this.changeState(CLIENT_STATE.CONNECTED)
-    })
-
-    return new Promise((resolve: { (value: CLIENT_STATE): void }, reject) => {
-      this._socket.on(CONNECT_EVENT.CONNECT, () => {
-        // handshake for authentication purpose
-        this._socket.emit(BIZ_EVENT.AUTH, { projectId, token }, (authCode: AUTH_CODE) => {
-          console.debug('Handshake status', authCode)
-          // failed to auth, disconnect and won't retry
-          if (AUTH_CODE.AUTH_FAILED === authCode) {
-            return reject(this.disconnect())
+      this._events.forEach(e => {
+        this._socket.on(e.event, (event: string) => {
+          const message: EventMessage = JSON.parse(event)
+          if (message.topic === e.topic) {
+            e.callback(message)
           }
-          this.changeState(CLIENT_STATE.CONNECTED)
-          return resolve(CLIENT_STATE.CONNECTED)
         })
       })
+    })
+  }
+
+  private endProcess() {
+    this._events.forEach(e => {
+      this._socket.off(e.event)
     })
   }
 }

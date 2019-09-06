@@ -80,3 +80,9 @@ export interface EventMessage {
 export interface EventCallback {
   (message: EventMessage): void
 }
+
+export interface EventStruct {
+  topic: string
+  event: string
+  callback: EventCallback
+}
