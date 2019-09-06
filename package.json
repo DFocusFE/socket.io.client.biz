@@ -1,0 +1,51 @@
+{
+  "name": "socket.io.client.biz",
+  "version": "1.0.2",
+  "description": "DFocus wanted ssp feature",
+  "scripts": {
+    "build": "rm -rf dist && rollup -c",
+    "docs:dev": "vuepress dev docs",
+    "docs:deploy": "vuepress build docs && gh-pages -d docs/.vuepress/dist"
+  },
+  "main": "dist/index.js",
+  "module": "dist/index.esm.js",
+  "jsnext:main": "dist/index.esm.js",
+  "typings": "dist/index.d.ts",
+  "sideEffects": false,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DFocusFE/socket.io.client.biz.git"
+  },
+  "files": [
+    "src",
+    "dist"
+  ],
+  "keywords": [
+    "socket.io.client"
+  ],
+  "author": "Howard.Zuo",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/DFocusFE/socket.io.client.biz/issues"
+  },
+  "homepage": "https://github.com/DFocusFE/socket.io.client.biz#readme",
+  "devDependencies": {
+    "@types/socket.io-client": "^1.4.32",
+    "codelyzer": "^5.1.0",
+    "gh-pages": "^2.1.1",
+    "prettier": "^1.18.2",
+    "rollup": "^1.20.3",
+    "rollup-plugin-typescript2": "^0.24.0",
+    "tslint": "^5.19.0",
+    "tslint-angular": "^3.0.2",
+    "tslint-config-prettier": "^1.18.0",
+    "typescript": "^3.6.2",
+    "vuepress": "^1.0.4"
+  },
+  "dependencies": {
+    "socket.io-client": "^2.2.0"
+  },
+  "peerDependencies": {
+    "socket.io-client": "^2.2.0"
+  }
+}

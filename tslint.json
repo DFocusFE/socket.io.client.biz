@@ -1,0 +1,5 @@
+{
+  "extends": ["tslint:recommended", "tslint-angular", "tslint-config-prettier"],
+  "tslint.rulesDirectory": "./node_modules/codelyzer",
+  "typescript.tsdk": "node_modules/typescript/lib"
+}

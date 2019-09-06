@@ -1,0 +1,7 @@
+{
+  "editor.formatOnSave": true,
+  "editor.wordWrap": "bounded",
+  "editor.insertSpaces": true,
+  "editor.tabSize": 2,
+  "typescript.validate.enable": true
+}
