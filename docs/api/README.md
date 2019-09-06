@@ -31,14 +31,16 @@ const bizClient = new SocketIoClientBiz({
 
 ### connect
 
-`(): void`
+`(callback: { (authCode: string): void }): void`
 
 - open the connection with server
 
 **Usage**
 
 ```javascript
-bizClient.connect()
+bizClient.connect(err => {
+  console.log('Failed to connect', err)
+})
 ```
 
 ### onStateChange

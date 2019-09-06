@@ -40,7 +40,9 @@ const bizClient = new SocketIoClientBiz({
 })
 
 // connect
-bizClient.connect()
+bizClient.connect(err => {
+  console.log('Failed to connect', err)
+})
 
 // watch every connection state change
 bizClient.onStateChange(state => {

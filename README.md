@@ -70,7 +70,9 @@ bizClient.subscribe('spaces', 'SPACE_ADDED', (message: EventMessage) => {
 })
 
 // connect
-bizClient.connect()
+bizClient.connect(err => {
+  console.log(`Failed to connect`, err)
+})
 ```
 
 ## LICENSE
