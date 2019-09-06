@@ -40,15 +40,15 @@ export class SocketIoClientBiz {
     })
   }
 
-  public connect() {
+  public connect(cb: { (authCode: string): void }) {
     if (this._socket) {
       throw new Error('You cannot call connect multiple times')
     }
 
-    this.connectToWebsocket()
+    this.connectToWebsocket(cb)
   }
 
-  private connectToWebsocket() {
+  private connectToWebsocket(cb: { (authCode: string): void }) {
     const { base, projectId, token } = this._opts
     this._socket = io(toUrl(base, projectId), { multiplex: false })
 
@@ -81,6 +81,7 @@ export class SocketIoClientBiz {
         console.debug('Handshake status', authCode)
         // failed to auth, disconnect and won't retry
         if (AUTH_CODE.AUTH_FAILED === authCode) {
+          cb(authCode)
           return this.disconnect()
         }
         this.changeState(CLIENT_STATE.CONNECTED)

@@ -65,13 +65,13 @@ class SocketIoClientBiz {
             }
         });
     }
-    connect() {
+    connect(cb) {
         if (this._socket) {
             throw new Error('You cannot call connect multiple times');
         }
-        this.connectToWebsocket();
+        this.connectToWebsocket(cb);
     }
-    connectToWebsocket() {
+    connectToWebsocket(cb) {
         const { base, projectId, token } = this._opts;
         this._socket = io(toUrl(base, projectId), { multiplex: false });
         this.changeState(exports.CLIENT_STATE.CONNECTING);
@@ -99,6 +99,7 @@ class SocketIoClientBiz {
                 console.debug('Handshake status', authCode);
                 // failed to auth, disconnect and won't retry
                 if (exports.AUTH_CODE.AUTH_FAILED === authCode) {
+                    cb(authCode);
                     return this.disconnect();
                 }
                 this.changeState(exports.CLIENT_STATE.CONNECTED);

@@ -7,7 +7,9 @@ export declare class SocketIoClientBiz {
     private _events;
     constructor(opts: SocketOpts);
     private validate;
-    connect(): void;
+    connect(cb: {
+        (authCode: string): void;
+    }): void;
     private connectToWebsocket;
     disconnect(): void;
     onStateChange(cb: StateChangeCallback): void;
