@@ -17,17 +17,7 @@ DFocus wanted ssp solution - javascript-client.
 
 ## Install
 
-### yarn
-
-```bash
-yarn add socket.io.client.biz
-```
-
-### npm
-
-```bash
-npm install --save socket.io.client.biz
-```
+Currently, you can only use `socket.io.client.biz` from the [source](https://github.com/DFocusFE/socket.io.client.biz), just copy `dist` folder into your repo.
 
 ## Import
 
