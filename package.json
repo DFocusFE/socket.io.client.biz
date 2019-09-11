@@ -1,6 +1,6 @@
 {
   "name": "socket.io.client.biz",
-  "version": "1.0.2",
+  "version": "1.0.0",
   "description": "DFocus wanted ssp feature",
   "scripts": {
     "build": "rm -rf dist && rollup -c",
