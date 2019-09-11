@@ -73,6 +73,11 @@ export interface EventCallback {
 export interface EventStruct {
     topic: string;
     event: string;
-    callback: EventCallback;
+    callback: {
+        (message: string): void;
+    };
+}
+export interface Subscription {
+    dispose(): void;
 }
 export {};

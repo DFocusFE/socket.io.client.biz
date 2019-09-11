@@ -1,4 +1,4 @@
-import { SocketOpts, StateChangeCallback, EventCallback } from './types';
+import { SocketOpts, StateChangeCallback, EventCallback, Subscription } from './types';
 export declare class SocketIoClientBiz {
     private _opts;
     private _state;
@@ -8,13 +8,13 @@ export declare class SocketIoClientBiz {
     constructor(opts: SocketOpts);
     private validate;
     connect(cb: {
-        (authCode: string): void;
+        (error: string): void;
     }): void;
     private connectToWebsocket;
     disconnect(): void;
-    onStateChange(cb: StateChangeCallback): void;
+    onStateChange(cb: StateChangeCallback): Subscription;
     private changeState;
-    subscribe(topic: string, event: string, callback: EventCallback): void;
+    subscribe(topic: string, event: string, callback: EventCallback): Subscription;
     private startProcess;
     private endProcess;
 }

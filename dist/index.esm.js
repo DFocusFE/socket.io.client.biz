@@ -48,6 +48,14 @@ function toUrl(...paths) {
         .replace(/https:\//, 'https://');
 }
 
+const DISCONNECT_EVENTS = [
+    CONNECT_EVENT.CONNECT_ERROR,
+    CONNECT_EVENT.CONNECT_TIMEOUT,
+    CONNECT_EVENT.DISCONNECT,
+    CONNECT_EVENT.ERROR,
+    CONNECT_EVENT.RECONNECT_ERROR,
+    CONNECT_EVENT.RECONNECT_FAILED
+];
 class SocketIoClientBiz {
     constructor(opts) {
         this._events = [];
@@ -75,24 +83,15 @@ class SocketIoClientBiz {
         this._socket = io(toUrl(base, projectId), { multiplex: false });
         this.changeState(CLIENT_STATE.CONNECTING);
         console.debug('Trying to connect to ssp Server...');
-        const disconnectEvents = [
-            CONNECT_EVENT.CONNECT_ERROR,
-            CONNECT_EVENT.CONNECT_TIMEOUT,
-            CONNECT_EVENT.DISCONNECT,
-            CONNECT_EVENT.ERROR,
-            CONNECT_EVENT.RECONNECT_ERROR,
-            CONNECT_EVENT.RECONNECT_FAILED
-        ];
-        disconnectEvents.forEach(e => {
-            this._socket.on(e, () => {
-                this.changeState(CLIENT_STATE.DISCONNECTED);
-                this.endProcess();
-            });
-        });
         this._socket.on(CONNECT_EVENT.RECONNECT, () => {
             this.changeState(CLIENT_STATE.CONNECTED);
         });
+        const errorListener = (...args) => {
+            cb(args[0]);
+        };
+        this._socket.on(CONNECT_EVENT.ERROR, errorListener);
         this._socket.on(CONNECT_EVENT.CONNECT, () => {
+            const localSocket = this._socket;
             // handshake for authentication purpose
             this._socket.emit(BIZ_EVENT.AUTH, { projectId, token }, (authCode) => {
                 console.debug('Handshake status', authCode);
@@ -101,16 +100,24 @@ class SocketIoClientBiz {
                     cb(authCode);
                     return this.disconnect();
                 }
-                this.changeState(CLIENT_STATE.CONNECTED);
+                this._socket.off(CONNECT_EVENT.ERROR, errorListener);
+                cb('');
+                DISCONNECT_EVENTS.forEach(e => {
+                    this._socket.on(e, () => {
+                        this.changeState(CLIENT_STATE.DISCONNECTED);
+                        this.endProcess(localSocket);
+                    });
+                });
                 this.startProcess();
+                this.changeState(CLIENT_STATE.CONNECTED);
             });
         });
     }
     disconnect() {
         try {
             this.changeState(CLIENT_STATE.DISCONNECTED);
-            this._stateChangeSubscriptions = [];
-            this._events = [];
+            // this._stateChangeSubscriptions = []
+            // this._events = []
             const socket = this._socket;
             this._socket = null;
             socket.close();
@@ -121,11 +128,18 @@ class SocketIoClientBiz {
     }
     onStateChange(cb) {
         if (!cb) {
-            return;
+            return {
+                dispose() { }
+            };
         }
-        if (this._stateChangeSubscriptions.every(c => c !== cb)) {
+        if (!this._stateChangeSubscriptions.includes(cb)) {
             this._stateChangeSubscriptions.push(cb);
         }
+        return {
+            dispose: () => {
+                this._stateChangeSubscriptions = this._stateChangeSubscriptions.filter(c => c !== cb);
+            }
+        };
     }
     changeState(state) {
         this._state = state;
@@ -137,11 +151,25 @@ class SocketIoClientBiz {
         if (!topic || !event || !callback) {
             throw new Error('topic or event or callback cannot be empty');
         }
-        this._events.push({
+        if (CLIENT_STATE.CONNECTED === this._state) {
+            throw new Error('subscribe cannot be called after connection established');
+        }
+        const e = {
             topic,
             event,
-            callback
-        });
+            callback: (event) => {
+                const message = JSON.parse(event);
+                if (message.topic === e.topic) {
+                    callback(message);
+                }
+            }
+        };
+        this._events.push(e);
+        return {
+            dispose: () => {
+                this._socket.off(event, e.callback);
+            }
+        };
     }
     startProcess() {
         const topics = this._events.map(e => e.topic);
@@ -152,18 +180,16 @@ class SocketIoClientBiz {
                 return;
             }
             this._events.forEach(e => {
-                this._socket.on(e.event, (event) => {
-                    const message = JSON.parse(event);
-                    if (message.topic === e.topic) {
-                        e.callback(message);
-                    }
-                });
+                this._socket.on(e.event, e.callback);
             });
         });
     }
-    endProcess() {
+    endProcess(socket) {
         this._events.forEach(e => {
-            this._socket.off(e.event);
+            socket.off(e.event);
+        });
+        DISCONNECT_EVENTS.forEach(e => {
+            socket.off(e);
         });
     }
 }

@@ -31,7 +31,7 @@ const bizClient = new SocketIoClientBiz({
 
 ### connect
 
-`(callback: { (authCode: string): void }): void`
+`(callback: { (error: string): void }): void`
 
 - open the connection with server
 
@@ -39,13 +39,15 @@ const bizClient = new SocketIoClientBiz({
 
 ```javascript
 bizClient.connect(err => {
-  console.log('Failed to connect', err)
+  if (err) {
+    console.log(`Failed to connect`, err)
+  }
 })
 ```
 
 ### onStateChange
 
-`(state: CLIENT_STATE): void`
+`(state: CLIENT_STATE): Subscription`
 
 - listen for client state change
 
@@ -53,14 +55,17 @@ bizClient.connect(err => {
 
 ```javascript
 // watch every connection state change
-bizClient.onStateChange(state => {
+const stateChangeSub = bizClient.onStateChange(state => {
   console.log('state changed to', state)
 })
+
+// you can dispose this subscription later
+stateChangeSub.dispose()
 ```
 
 ### subscribe
 
-`(topic: string, event: string, cb: EventCallback): void`
+`(topic: string, event: string, cb: EventCallback): Subscription`
 
 - subscribe event for specific topic
 
@@ -68,9 +73,12 @@ bizClient.onStateChange(state => {
 
 ```javascript
 // watch for specific event along with its topic
-bizClient.subscribe('spaces', 'SPACE_ADDED', (message: EventMessage) => {
+const eventSub = bizClient.subscribe('spaces', 'SPACE_ADDED', (message: EventMessage) => {
   console.log(message)
 })
+
+// you can dispose this subscription later
+eventSub.dispose()
 ```
 
 ### disconnect

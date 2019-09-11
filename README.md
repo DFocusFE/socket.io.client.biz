@@ -71,7 +71,9 @@ bizClient.subscribe('spaces', 'SPACE_ADDED', (message: EventMessage) => {
 
 // connect
 bizClient.connect(err => {
-  console.log(`Failed to connect`, err)
+  if (err) {
+    console.log(`Failed to connect`, err)
+  }
 })
 ```
 

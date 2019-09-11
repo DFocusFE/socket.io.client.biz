@@ -39,19 +39,23 @@ const bizClient = new SocketIoClientBiz({
   }
 })
 
-// connect
-bizClient.connect(err => {
-  console.log('Failed to connect', err)
-})
-
 // watch every connection state change
 bizClient.onStateChange(state => {
-  console.log('state changed to', state)
+  if (err) {
+    console.log(`Failed to connect`, err)
+  }
 })
 
 // watch for specific event along with its topic
 bizClient.subscribe('spaces', 'SPACE_ADDED', (message: EventMessage) => {
   console.log(message)
+})
+
+// connect
+bizClient.connect(err => {
+  if (err) {
+    console.log(`Failed to connect`, err)
+  }
 })
 ```
 

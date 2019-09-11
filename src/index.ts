@@ -10,10 +10,20 @@ import {
   EventMessage,
   SUBSCRIBE_CODE,
   EventCallback,
-  EventStruct
+  EventStruct,
+  Subscription
 } from './types'
 
 import { toUrl } from './helper'
+
+const DISCONNECT_EVENTS = [
+  CONNECT_EVENT.CONNECT_ERROR,
+  CONNECT_EVENT.CONNECT_TIMEOUT,
+  CONNECT_EVENT.DISCONNECT,
+  CONNECT_EVENT.ERROR,
+  CONNECT_EVENT.RECONNECT_ERROR,
+  CONNECT_EVENT.RECONNECT_FAILED
+]
 
 export class SocketIoClientBiz {
   private _opts: SocketOpts
@@ -40,7 +50,7 @@ export class SocketIoClientBiz {
     })
   }
 
-  public connect(cb: { (authCode: string): void }) {
+  public connect(cb: { (error: string): void }) {
     if (this._socket) {
       throw new Error('You cannot call connect multiple times')
     }
@@ -48,34 +58,26 @@ export class SocketIoClientBiz {
     this.connectToWebsocket(cb)
   }
 
-  private connectToWebsocket(cb: { (authCode: string): void }) {
+  private connectToWebsocket(cb: { (error: string): void }) {
     const { base, projectId, token } = this._opts
     this._socket = io(toUrl(base, projectId), { multiplex: false })
 
     this.changeState(CLIENT_STATE.CONNECTING)
     console.debug('Trying to connect to ssp Server...')
 
-    const disconnectEvents = [
-      CONNECT_EVENT.CONNECT_ERROR,
-      CONNECT_EVENT.CONNECT_TIMEOUT,
-      CONNECT_EVENT.DISCONNECT,
-      CONNECT_EVENT.ERROR,
-      CONNECT_EVENT.RECONNECT_ERROR,
-      CONNECT_EVENT.RECONNECT_FAILED
-    ]
-
-    disconnectEvents.forEach(e => {
-      this._socket.on(e, () => {
-        this.changeState(CLIENT_STATE.DISCONNECTED)
-        this.endProcess()
-      })
-    })
-
     this._socket.on(CONNECT_EVENT.RECONNECT, () => {
       this.changeState(CLIENT_STATE.CONNECTED)
     })
 
+    const errorListener = (...args: Array<string>) => {
+      cb(args[0])
+    }
+
+    this._socket.on(CONNECT_EVENT.ERROR, errorListener)
+
     this._socket.on(CONNECT_EVENT.CONNECT, () => {
+      const localSocket = this._socket
+
       // handshake for authentication purpose
       this._socket.emit(BIZ_EVENT.AUTH, { projectId, token }, (authCode: AUTH_CODE) => {
         console.debug('Handshake status', authCode)
@@ -84,9 +86,20 @@ export class SocketIoClientBiz {
           cb(authCode)
           return this.disconnect()
         }
-        this.changeState(CLIENT_STATE.CONNECTED)
+
+        this._socket.off(CONNECT_EVENT.ERROR, errorListener)
+
+        cb('')
+
+        DISCONNECT_EVENTS.forEach(e => {
+          this._socket.on(e, () => {
+            this.changeState(CLIENT_STATE.DISCONNECTED)
+            this.endProcess(localSocket)
+          })
+        })
 
         this.startProcess()
+        this.changeState(CLIENT_STATE.CONNECTED)
       })
     })
   }
@@ -95,8 +108,8 @@ export class SocketIoClientBiz {
     try {
       this.changeState(CLIENT_STATE.DISCONNECTED)
 
-      this._stateChangeSubscriptions = []
-      this._events = []
+      // this._stateChangeSubscriptions = []
+      // this._events = []
 
       const socket = this._socket
       this._socket = null
@@ -107,12 +120,20 @@ export class SocketIoClientBiz {
     }
   }
 
-  public onStateChange(cb: StateChangeCallback) {
+  public onStateChange(cb: StateChangeCallback): Subscription {
     if (!cb) {
-      return
+      return {
+        dispose() {}
+      }
     }
-    if (this._stateChangeSubscriptions.every(c => c !== cb)) {
+    if (!this._stateChangeSubscriptions.includes(cb)) {
       this._stateChangeSubscriptions.push(cb)
+    }
+
+    return {
+      dispose: () => {
+        this._stateChangeSubscriptions = this._stateChangeSubscriptions.filter(c => c !== cb)
+      }
     }
   }
 
@@ -123,16 +144,33 @@ export class SocketIoClientBiz {
     })
   }
 
-  public subscribe(topic: string, event: string, callback: EventCallback) {
+  public subscribe(topic: string, event: string, callback: EventCallback): Subscription {
     if (!topic || !event || !callback) {
       throw new Error('topic or event or callback cannot be empty')
     }
 
-    this._events.push({
+    if (CLIENT_STATE.CONNECTED === this._state) {
+      throw new Error('subscribe cannot be called after connection established')
+    }
+
+    const e = {
       topic,
       event,
-      callback
-    })
+      callback: (event: string): void => {
+        const message: EventMessage = JSON.parse(event)
+        if (message.topic === e.topic) {
+          callback(message)
+        }
+      }
+    }
+
+    this._events.push(e)
+
+    return {
+      dispose: () => {
+        this._socket.off(event, e.callback)
+      }
+    }
   }
 
   private startProcess() {
@@ -146,19 +184,18 @@ export class SocketIoClientBiz {
       }
 
       this._events.forEach(e => {
-        this._socket.on(e.event, (event: string) => {
-          const message: EventMessage = JSON.parse(event)
-          if (message.topic === e.topic) {
-            e.callback(message)
-          }
-        })
+        this._socket.on(e.event, e.callback)
       })
     })
   }
 
-  private endProcess() {
+  private endProcess(socket: SocketIOClient.Socket) {
     this._events.forEach(e => {
-      this._socket.off(e.event)
+      socket.off(e.event)
+    })
+
+    DISCONNECT_EVENTS.forEach(e => {
+      socket.off(e)
     })
   }
 }
