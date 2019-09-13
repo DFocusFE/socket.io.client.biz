@@ -14,7 +14,7 @@
   "sideEffects": false,
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/DFocusFE/socket.io.client.biz.git"
+    "url": "git+https://github.com/DFocusGroup/socket.io.client.biz.git"
   },
   "files": [
     "src",
@@ -26,9 +26,9 @@
   "author": "Howard.Zuo",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/DFocusFE/socket.io.client.biz/issues"
+    "url": "https://github.com/DFocusGroup/socket.io.client.biz/issues"
   },
-  "homepage": "https://github.com/DFocusFE/socket.io.client.biz#readme",
+  "homepage": "https://github.com/DFocusGroup/socket.io.client.biz#readme",
   "devDependencies": {
     "@types/socket.io-client": "^1.4.32",
     "codelyzer": "^5.1.0",

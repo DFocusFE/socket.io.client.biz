@@ -21,7 +21,7 @@ DFocus wanted ssp solution - javascript-client. It must be work with the specifi
 
 ## Install
 
-Currently, you can only use `socket.io.client.biz` from the [source](https://github.com/DFocusFE/socket.io.client.biz), just copy `dist` folder into your repo.
+Currently, you can only use `socket.io.client.biz` from the [source](https://github.com/DFocusGroup/socket.io.client.biz), just copy `dist` folder into your repo.
 
 ## Usage
 
@@ -61,10 +61,10 @@ bizClient.connect(err => {
 
 ## LICENSE
 
-[MIT License](https://raw.githubusercontent.com/DFocusFE/socket.io.client.biz/master/LICENSE)
+[MIT License](https://raw.githubusercontent.com/DFocusGroup/socket.io.client.biz/master/LICENSE)
 
 [npm-url]: https://npmjs.org/package/socket.io.client.biz
 [npm-image]: https://badge.fury.io/js/socket.io.client.biz.png
-[david-url]: https://david-dm.org/DFocusFE/socket.io.client.biz.png
+[david-url]: https://david-dm.org/DFocusGroup/socket.io.client.biz.png
 [dt-url]: https://img.shields.io/npm/dt/socket.io.client.biz.svg
 [license-url]: https://img.shields.io/npm/l/socket.io.client.biz.svg

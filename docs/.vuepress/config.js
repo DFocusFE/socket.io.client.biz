@@ -8,7 +8,7 @@ module.exports = {
     logo: '/favicon.png',
     nav: [
       { text: 'API', link: '/api/' },
-      { text: 'Github', link: 'https://github.com/DFocusFE/socket.io.client.biz' }
+      { text: 'Github', link: 'https://github.com/DFocusGroup/socket.io.client.biz' }
     ],
     sidebar: {
       '/api/': ['']
