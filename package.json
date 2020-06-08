@@ -30,22 +30,22 @@
   },
   "homepage": "https://github.com/DFocusGroup/socket.io.client.biz#readme",
   "devDependencies": {
-    "@types/socket.io-client": "^1.4.32",
-    "codelyzer": "^5.1.0",
-    "gh-pages": "^2.1.1",
-    "prettier": "^1.18.2",
-    "rollup": "^1.20.3",
-    "rollup-plugin-typescript2": "^0.24.0",
-    "tslint": "^5.19.0",
+    "@types/socket.io-client": "^1.4.33",
+    "codelyzer": "^5.2.2",
+    "gh-pages": "^3.0.0",
+    "prettier": "^2.0.5",
+    "rollup": "^2.14.0",
+    "rollup-plugin-typescript2": "^0.27.1",
+    "tslint": "^6.1.2",
     "tslint-angular": "^3.0.2",
     "tslint-config-prettier": "^1.18.0",
-    "typescript": "^3.6.2",
-    "vuepress": "^1.0.4"
+    "typescript": "^3.9.5",
+    "vuepress": "^1.5.0"
   },
   "dependencies": {
-    "socket.io-client": "^2.2.0"
+    "socket.io-client": "^2.3.0"
   },
   "peerDependencies": {
-    "socket.io-client": "^2.2.0"
+    "socket.io-client": "^2.3.0"
   }
 }
